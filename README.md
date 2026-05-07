@@ -811,15 +811,6 @@ python-dotenv>=1.0.0
 
 ---
 
-## License
-
-MIT License
-
-Free to use, modify, and distribute.
-Please credit the original authors if you build upon this project.
-
----
-
 Translator Bot v2.1.0
 Made by testerxma — https://github.com/testerxma
      and uaaw     — https://github.com/uaaw
