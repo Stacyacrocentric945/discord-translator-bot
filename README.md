@@ -1,4 +1,4 @@
-```markdown
+
 # Discord Translator Bot
 
 A production-ready Discord bot that automatically detects and translates
