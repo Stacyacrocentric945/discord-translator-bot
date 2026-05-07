@@ -46,7 +46,7 @@ log = logging.getLogger(__name__)
 # =========================================================
 
 load_dotenv()
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DISCORD_TOKEN  = os.getenv("DISCORD_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 if not DISCORD_TOKEN:
@@ -55,29 +55,21 @@ if not GEMINI_API_KEY:
     raise RuntimeError("GEMINI_API_KEY is missing from your .env file!")
 
 # =========================================================
-#  Bot Meta — Owners & Credits
+#  Bot Meta
 # =========================================================
 
-BOT_VERSION   = "2.0.0"
-BOT_NAME      = "Translator Bot"
+BOT_VERSION = "2.1.0"
+BOT_NAME    = "Translator Bot"
 
 OWNERS = [
-    {
-        "name":   "testerxma",
-        "github": "https://github.com/testerxma",
-    },
-    {
-        "name":   "uaaw",
-        "github": "https://github.com/uaaw",
-    },
+    {"name": "testerxma", "github": "https://github.com/testerxma"},
+    {"name": "uaaw",      "github": "https://github.com/uaaw"},
 ]
 
 def _owners_line() -> str:
-    """Returns a formatted owners string for embeds/footers."""
     return " • ".join(f"[{o['name']}]({o['github']})" for o in OWNERS)
 
 def _owners_plain() -> str:
-    """Returns plain text owners string (no markdown links)."""
     return " & ".join(o["name"] for o in OWNERS)
 
 # =========================================================
@@ -100,24 +92,46 @@ PREFS_FILE               = "user_prefs.json"
 # =========================================================
 
 LANG_LABEL: dict[str, str] = {
-    "ar": "🇸🇦 Arabic",
-    "ja": "🇯🇵 Japanese",
-    "en": "🇺🇸 English",
-    "fr": "🇫🇷 French",
-    "es": "🇪🇸 Spanish",
-    "de": "🇩🇪 German",
-    "ko": "🇰🇷 Korean",
-    "zh": "🇨🇳 Chinese",
-    "ru": "🇷🇺 Russian",
-    "tr": "🇹🇷 Turkish",
-    "it": "🇮🇹 Italian",
-    "pt": "🇵🇹 Portuguese",
-    "hi": "🇮🇳 Hindi",
-    "id": "🇮🇩 Indonesian",
-    "pl": "🇵🇱 Polish",
-    "nl": "🇳🇱 Dutch",
-    "th": "🇹🇭 Thai",
-    "vi": "🇻🇳 Vietnamese",
+    "ar": "Arabic",
+    "ja": "Japanese",
+    "en": "English",
+    "fr": "French",
+    "es": "Spanish",
+    "de": "German",
+    "ko": "Korean",
+    "zh": "Chinese",
+    "ru": "Russian",
+    "tr": "Turkish",
+    "it": "Italian",
+    "pt": "Portuguese",
+    "hi": "Hindi",
+    "id": "Indonesian",
+    "pl": "Polish",
+    "nl": "Dutch",
+    "th": "Thai",
+    "vi": "Vietnamese",
+}
+
+# Japanese translations of language names for the JP help board
+LANG_LABEL_JA: dict[str, str] = {
+    "ar": "アラビア語",
+    "ja": "日本語",
+    "en": "英語",
+    "fr": "フランス語",
+    "es": "スペイン語",
+    "de": "ドイツ語",
+    "ko": "韓国語",
+    "zh": "中国語",
+    "ru": "ロシア語",
+    "tr": "トルコ語",
+    "it": "イタリア語",
+    "pt": "ポルトガル語",
+    "hi": "ヒンディー語",
+    "id": "インドネシア語",
+    "pl": "ポーランド語",
+    "nl": "オランダ語",
+    "th": "タイ語",
+    "vi": "ベトナム語",
 }
 
 LANG_CODE_ALIASES: dict[str, str] = {
@@ -394,7 +408,6 @@ def _base_embed(
     title: Optional[str] = None,
     color: int = 0x5865F2,
 ) -> discord.Embed:
-    """Create a pre-styled embed with bot branding in the footer."""
     embed = discord.Embed(title=title, color=color)
     embed.set_footer(
         text=f"{BOT_NAME} v{BOT_VERSION} • Made by {_owners_plain()}"
@@ -415,9 +428,9 @@ def _build_text_prompt(target_lang: Optional[str] = None) -> str:
         )
     return (
         "Detect the language of the text. "
-        "If Arabic → translate to Japanese. "
-        "If Japanese → translate to Arabic. "
-        "Otherwise → translate to English. "
+        "If Arabic, translate to Japanese. "
+        "If Japanese, translate to Arabic. "
+        "Otherwise, translate to English. "
         "Return JSON: src_lang (ISO 639-1), transcription (null), translation."
     )
 
@@ -432,9 +445,9 @@ def _build_audio_prompt(target_lang: Optional[str] = None) -> str:
         )
     return (
         "Transcribe this audio and detect its language. "
-        "If Arabic → translate to Japanese. "
-        "If Japanese → translate to Arabic. "
-        "Otherwise → translate to English. "
+        "If Arabic, translate to Japanese. "
+        "If Japanese, translate to Arabic. "
+        "Otherwise, translate to English. "
         "Return JSON: src_lang (ISO 639-1), transcription, translation."
     )
 
@@ -483,6 +496,12 @@ async def process_audio(
             lambda: asyncio.get_running_loop().run_in_executor(None, _upload)
         )
 
+        log.info(
+            "Audio uploaded: %s (%s)",
+            audio_file.name,
+            getattr(audio_file, "mime_type", "unknown"),
+        )
+
         def _generate(model_id: str):
             return gemini_client.models.generate_content(
                 model=model_id,
@@ -509,8 +528,9 @@ async def process_audio(
                     None,
                     lambda: gemini_client.files.delete(name=audio_file.name),
                 )
+                log.info("Deleted Gemini file: %s", audio_file.name)
             except Exception as exc:
-                log.warning("Failed to delete uploaded Gemini file: %s", exc)
+                log.warning("Failed to delete Gemini file: %s", exc)
 
 # =========================================================
 #  Audio Helpers
@@ -558,20 +578,18 @@ async def handle_request(
     original_msg: discord.Message,
 ) -> None:
 
-    # ── Cooldown check ───────────────────────────────────
     cooldown = is_user_on_cooldown(message.author.id)
     if cooldown:
         await message.reply(
-            f"⏳ Please wait **{int(cooldown)}s** before another translation."
+            f"少々お待ちください / Please wait **{int(cooldown)}s** before another translation."
         )
         return
 
-    # ── Guild concurrency check ──────────────────────────
     guild_id = message.guild.id if message.guild else 0
     if not _guild_increment(guild_id):
         await message.reply(
-            f"⏳ This server already has "
-            f"**{MAX_CONCURRENT_PER_GUILD}** translations running. "
+            f"このサーバーはビジー状態です / "
+            f"Server has **{MAX_CONCURRENT_PER_GUILD}** translations running. "
             f"Please wait a moment."
         )
         return
@@ -582,13 +600,11 @@ async def handle_request(
     try:
         async with message.channel.typing():
 
-            # ── Find audio attachment ────────────────────
             audio_att = next(
                 (a for a in original_msg.attachments if _is_audio_attachment(a)),
                 None,
             )
 
-            # ── Transcribe / translate ───────────────────
             if audio_att:
                 try:
                     tmp_path = await download_audio(audio_att)
@@ -599,55 +615,56 @@ async def handle_request(
             else:
                 text = original_msg.content.strip()
                 if not text:
-                    await message.reply("⚠️ That message has no text to translate.")
+                    await message.reply(
+                        "⚠️ 翻訳するテキストがありません / That message has no text to translate."
+                    )
                     return
                 res = await process_text(text, target_lang=target_lang)
 
-            # ── Normalise & resolve languages ────────────
             src = _normalise_lang_code(res.src_lang)
             tgt = _get_target_lang(src, target_lang)
 
-            # ── Build result embed ───────────────────────
             icon             = "🎙️" if audio_att else "💬"
             original_display = res.transcription or original_msg.content
 
             embed = _base_embed()
             embed.set_author(
-                name=f"{icon} Message from {original_msg.author.display_name}",
+                name=f"{icon} {original_msg.author.display_name}",
                 icon_url=original_msg.author.display_avatar.url,
             )
             embed.add_field(
-                name=f"📝 Original ({LANG_LABEL.get(src, src.upper())})",
+                name=f"原文 / Original — {LANG_LABEL.get(src, src.upper())}",
                 value=_safe_embed_value(original_display),
                 inline=False,
             )
             embed.add_field(
-                name=f"🌍 Translation ({LANG_LABEL.get(tgt, tgt.upper())})",
+                name=f"翻訳 / Translation — {LANG_LABEL.get(tgt, tgt.upper())}",
                 value=_safe_embed_value(res.translation),
                 inline=False,
             )
             if target_lang:
                 embed.add_field(
-                    name="⚙️ Preference",
-                    value=f"Targeting {LANG_LABEL.get(target_lang, target_lang)}",
+                    name="設定 / Preference",
+                    value=(
+                        f"{LANG_LABEL_JA.get(target_lang, target_lang)} / "
+                        f"{LANG_LABEL.get(target_lang, target_lang)}"
+                    ),
                     inline=False,
                 )
 
             await message.reply(embed=embed)
             set_user_cooldown(message.author.id)
 
-    # ── Error Handling ────────────────────────────────────
     except QuotaExhaustedError:
         await message.reply(
-            "🚫 **All translation models are at their limits.**\n"
+            "🚫 **すべてのモデルが制限に達しました / All models are at quota.**\n"
             "Quotas reset daily (~midnight PT).\n"
-            "Upgrade for unlimited usage: <https://ai.google.dev/gemini-api/docs/pricing>"
+            "<https://ai.google.dev/gemini-api/docs/pricing>"
         )
 
     except genai_errors.ClientError as exc:
         log.exception("Gemini API error")
         code = getattr(exc, "code", None)
-
         if code == 429:
             retry_seconds = 60
             try:
@@ -659,12 +676,12 @@ async def handle_request(
             except Exception:
                 pass
             await message.reply(
-                f"🚫 **Rate limit hit!**\n"
+                f"🚫 **レート制限 / Rate limit hit!**\n"
                 f"Please retry in **{retry_seconds}s**."
             )
         elif code == 503:
             await message.reply(
-                "🚫 **Gemini servers are overloaded** (503).\n"
+                "🚫 **Geminiサーバーが過負荷です / Gemini servers are overloaded** (503).\n"
                 "Please try again in a few minutes."
             )
         else:
@@ -672,7 +689,7 @@ async def handle_request(
 
     except Exception as exc:
         log.exception("Unexpected error in handle_request")
-        await message.reply(f"❌ Unexpected error: `{exc}`")
+        await message.reply(f"❌ Error: `{exc}`")
 
     finally:
         _cleanup(tmp_path)
@@ -737,9 +754,10 @@ async def on_message(message: discord.Message):
 
     if message.reference is None:
         await message.reply(
-            f"👋 {message.author.mention} "
+            f"👋 {message.author.mention}\n"
+            f"**メッセージに返信して**タグしてください / "
             f"**Reply to a message** and tag me to translate it!\n"
-            f"Use `!help` for full command list."
+            f"`!help` または `!helpja` でコマンド一覧を表示"
         )
         return
 
@@ -748,11 +766,15 @@ async def on_message(message: discord.Message):
             message.reference.message_id
         )
     except Exception as exc:
-        await message.reply(f"❌ Could not fetch the original message: `{exc}`")
+        await message.reply(
+            f"❌ メッセージを取得できませんでした / Could not fetch message: `{exc}`"
+        )
         return
 
     if original.author.bot:
-        await message.reply("⚠️ I can't translate messages from bots.")
+        await message.reply(
+            "⚠️ ボットのメッセージは翻訳できません / Cannot translate bot messages."
+        )
         return
 
     task = asyncio.create_task(handle_request(message, original))
@@ -760,81 +782,165 @@ async def on_message(message: discord.Message):
     task.add_done_callback(_background_tasks.discard)
 
 # =========================================================
-#  Commands
+#  Commands — English Help Board
 # =========================================================
 
 @bot.command(name="help")
 async def help_command(ctx: commands.Context):
-    """Show all available commands and how to use the bot."""
-    embed = _base_embed(title="📖 Help — All Commands")
+    """Show the full English help dashboard."""
+    embed = _base_embed(title="Help — All Commands")
     embed.set_thumbnail(url=bot.user.display_avatar.url)
 
     embed.add_field(
-        name="🔤 How to Translate",
+        name="How to Translate",
         value=(
-            "**Reply** to any message and **mention the bot** `@BotName`.\n"
-            "Supports both **text messages** and **audio attachments**.\n"
+            "Reply to any message and mention the bot `@BotName`.\n"
+            "Works with text messages and audio attachments.\n"
             "The bot auto-detects the source language."
         ),
         inline=False,
     )
     embed.add_field(
-        name="⚙️ Language Commands",
+        name="Language Commands",
         value=(
             "`!lang [code]` — Set your personal target language\n"
             "`!langs`       — List all supported language codes\n"
-            "`!resetlang`   — Clear your preference (restore default)\n"
+            "`!resetlang`   — Clear your preference and restore default"
         ),
         inline=False,
     )
     embed.add_field(
-        name="📊 Info Commands",
+        name="Info Commands",
         value=(
-            "`!status`      — Show bot stats and your current settings\n"
-            "`!owners`      — Who made this bot\n"
-            "`!help`        — Show this message\n"
+            "`!status`  — Show bot stats and your current settings\n"
+            "`!owners`  — Who made this bot\n"
+            "`!help`    — This English help board\n"
+            "`!helpja`  — Japanese help board (日本語ヘルプ)"
         ),
         inline=False,
     )
     embed.add_field(
-        name="🌍 Default Behaviour",
+        name="Default Behaviour",
         value=(
-            "• **Arabic** → translated to **Japanese**\n"
-            "• **Japanese** → translated to **Arabic**\n"
-            "• **Any other language** → translated to **English**\n"
-            "• Set a custom target with `!lang <code>` to override."
+            "Arabic   → translated to Japanese\n"
+            "Japanese → translated to Arabic\n"
+            "Any other language → translated to English\n"
+            "Override with `!lang <code>`."
         ),
         inline=False,
     )
     embed.add_field(
-        name="🎙️ Audio Support",
+        name="Audio Support",
         value=(
-            f"Max file size: **{MAX_AUDIO_SIZE_MB} MB**\n"
-            f"Supported formats: `mp3 wav ogg m4a webm flac opus wma aac`"
+            f"Max size : {MAX_AUDIO_SIZE_MB} MB\n"
+            f"Formats  : mp3  wav  ogg  m4a  webm  flac  opus  wma  aac"
         ),
         inline=False,
     )
     embed.add_field(
-        name="⏱️ Limits",
+        name="Limits",
         value=(
-            f"• Per-user cooldown: **{USER_COOLDOWN_SECONDS}s** (after successful translation)\n"
-            f"• Max concurrent per server: **{MAX_CONCURRENT_PER_GUILD}**\n"
-            f"• Gemini fallback models: **{len(MODEL_PRIORITY)}**"
+            f"Per-user cooldown      : {USER_COOLDOWN_SECONDS}s after successful translation\n"
+            f"Max concurrent/server  : {MAX_CONCURRENT_PER_GUILD}\n"
+            f"Gemini fallback models : {len(MODEL_PRIORITY)}"
         ),
         inline=False,
     )
     await ctx.send(embed=embed)
 
 
+# =========================================================
+#  Commands — Japanese Help Board
+# =========================================================
+
+@bot.command(name="helpja")
+async def help_command_ja(ctx: commands.Context):
+    """日本語ヘルプダッシュボードを表示します。"""
+    embed = _base_embed(title="ヘルプ — 全コマンド一覧")
+    embed.set_thumbnail(url=bot.user.display_avatar.url)
+
+    embed.add_field(
+        name="翻訳の使い方",
+        value=(
+            "翻訳したいメッセージに**返信**して、ボットを**メンション**してください。\n"
+            "テキストメッセージと音声ファイルの両方に対応しています。\n"
+            "送信元の言語は自動検出されます。"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="言語コマンド",
+        value=(
+            "`!lang [コード]` — 個人の翻訳先言語を設定\n"
+            "`!langs`         — 対応言語コード一覧を表示\n"
+            "`!resetlang`     — 設定をリセットしてデフォルトに戻す"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="情報コマンド",
+        value=(
+            "`!status`  — ボットの状態と個人設定を表示\n"
+            "`!owners`  — 制作者情報を表示\n"
+            "`!helpja`  — このヘルプを表示（日本語）\n"
+            "`!help`    — 英語ヘルプを表示"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="デフォルト動作",
+        value=(
+            "アラビア語 → 日本語に翻訳\n"
+            "日本語 → アラビア語に翻訳\n"
+            "その他の言語 → 英語に翻訳\n"
+            "`!lang <コード>` で変更できます。"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="対応言語コード一覧",
+        value="\n".join(
+            f"`{code}` — {name_ja}  /  {LANG_LABEL[code]}"
+            for code, name_ja in sorted(LANG_LABEL_JA.items())
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="音声ファイルのサポート",
+        value=(
+            f"最大サイズ : {MAX_AUDIO_SIZE_MB} MB\n"
+            f"対応形式   : mp3  wav  ogg  m4a  webm  flac  opus  wma  aac"
+        ),
+        inline=False,
+    )
+    embed.add_field(
+        name="制限事項",
+        value=(
+            f"クールダウン（ユーザーごと）: 翻訳成功後 {USER_COOLDOWN_SECONDS}秒\n"
+            f"同時翻訳数（サーバーごと）  : 最大 {MAX_CONCURRENT_PER_GUILD} 件\n"
+            f"Gemini フォールバックモデル数: {len(MODEL_PRIORITY)} 個"
+        ),
+        inline=False,
+    )
+    await ctx.send(embed=embed)
+
+
+# =========================================================
+#  Commands — Languages, Lang, Reset, Status, Owners
+# =========================================================
+
 @bot.command(name="langs")
 async def list_languages(ctx: commands.Context):
-    """List all supported translation languages."""
-    lines = [f"`{k}` — {v}" for k, v in sorted(LANG_LABEL.items())]
-    embed = _base_embed(title="🌍 Supported Languages")
+    """List all supported translation languages in English and Japanese."""
+    lines = [
+        f"`{code}` — {LANG_LABEL[code]}  /  {LANG_LABEL_JA[code]}"
+        for code in sorted(LANG_LABEL)
+    ]
+    embed = _base_embed(title="Supported Languages / 対応言語一覧")
     embed.description = "\n".join(lines)
     embed.add_field(
-        name="💡 Usage",
-        value="`!lang <code>` — e.g. `!lang en` or `!lang ja`",
+        name="Usage / 使い方",
+        value="`!lang <code>` — e.g. `!lang en`  /  例: `!lang ja`",
         inline=False,
     )
     await ctx.send(embed=embed)
@@ -845,17 +951,19 @@ async def set_language(ctx: commands.Context, lang_code: Optional[str] = None):
     """Set or view your personal translation target language."""
     if not lang_code:
         current = get_user_lang(ctx.author.id)
-        embed   = _base_embed(title="⚙️ Your Language Setting")
+        embed   = _base_embed(title="Your Language Setting / 言語設定")
         if current:
             embed.description = (
-                f"Your current target language:\n"
-                f"**{LANG_LABEL.get(current, current)}** (`{current}`)"
+                f"Current target / 現在の翻訳先:\n"
+                f"**{LANG_LABEL.get(current, current)}**"
+                f" / **{LANG_LABEL_JA.get(current, current)}**"
+                f" (`{current}`)"
             )
         else:
             embed.description = (
-                "You have **no custom target** set.\n"
-                "Default: **Arabic ↔ Japanese** auto-swap.\n\n"
-                "Set one with `!lang <code>` — see `!langs` for options."
+                "No custom target set / カスタム設定なし\n"
+                "Default: Arabic ↔ Japanese / デフォルト: アラビア語 ↔ 日本語\n\n"
+                "Set with `!lang <code>` — see `!langs`"
             )
         await ctx.send(embed=embed)
         return
@@ -863,17 +971,23 @@ async def set_language(ctx: commands.Context, lang_code: Optional[str] = None):
     lang_code = lang_code.lower().strip()
     if lang_code not in LANG_LABEL:
         codes = " ".join(f"`{k}`" for k in sorted(LANG_LABEL))
-        embed = _base_embed(title="❌ Unknown Language Code", color=0xED4245)
-        embed.description = f"Available codes:\n{codes}"
+        embed = _base_embed(
+            title="Unknown Language Code / 無効な言語コード",
+            color=0xED4245,
+        )
+        embed.description = f"Available codes / 利用可能なコード:\n{codes}"
         await ctx.send(embed=embed)
         return
 
     set_user_lang(ctx.author.id, lang_code)
-    embed = _base_embed(title="✅ Language Updated")
+    embed = _base_embed(title="Language Updated / 言語を更新しました")
     embed.description = (
-        f"{ctx.author.mention} your target language is now:\n"
-        f"**{LANG_LABEL[lang_code]}** (`{lang_code}`)\n\n"
-        f"All your translations will target this language."
+        f"{ctx.author.mention}\n"
+        f"Target language / 翻訳先言語:\n"
+        f"**{LANG_LABEL[lang_code]}** / **{LANG_LABEL_JA[lang_code]}**"
+        f" (`{lang_code}`)\n\n"
+        f"All your translations will now target this language.\n"
+        f"以降の翻訳はこの言語に翻訳されます。"
     )
     await ctx.send(embed=embed)
 
@@ -882,10 +996,11 @@ async def set_language(ctx: commands.Context, lang_code: Optional[str] = None):
 async def reset_language(ctx: commands.Context):
     """Clear your custom language preference."""
     clear_user_lang(ctx.author.id)
-    embed = _base_embed(title="✅ Language Preference Reset")
+    embed = _base_embed(title="Language Reset / 言語設定をリセットしました")
     embed.description = (
-        f"{ctx.author.mention} your preference has been cleared.\n"
-        f"Restored default: **Arabic ↔ Japanese** auto-swap."
+        f"{ctx.author.mention}\n"
+        f"Preference cleared. Default restored: Arabic ↔ Japanese\n"
+        f"設定をクリアしました。デフォルトに戻りました: アラビア語 ↔ 日本語"
     )
     await ctx.send(embed=embed)
 
@@ -896,47 +1011,52 @@ async def status_command(ctx: commands.Context):
     guild_id   = ctx.guild.id if ctx.guild else 0
     active     = _guild_active_requests.get(guild_id, 0)
     user_lang  = get_user_lang(ctx.author.id)
-    lang_label = (
-        f"{LANG_LABEL.get(user_lang, user_lang)} (`{user_lang}`)"
-        if user_lang
-        else "Default (Arabic ↔ Japanese)"
-    )
     cooldown   = is_user_on_cooldown(ctx.author.id)
 
-    embed = _base_embed(title="📊 Bot Status")
+    if user_lang:
+        lang_display = (
+            f"{LANG_LABEL.get(user_lang, user_lang)}"
+            f" / {LANG_LABEL_JA.get(user_lang, user_lang)}"
+            f" (`{user_lang}`)"
+        )
+    else:
+        lang_display = "Default — Arabic ↔ Japanese / アラビア語 ↔ 日本語"
+
+    embed = _base_embed(title="Bot Status / ボット状態")
     embed.set_thumbnail(url=bot.user.display_avatar.url)
+
     embed.add_field(
-        name="🌍 Your Target Language",
-        value=lang_label,
+        name="Target Language / 翻訳先言語",
+        value=lang_display,
         inline=False,
     )
     embed.add_field(
-        name="⏳ Your Cooldown",
-        value=f"{int(cooldown)}s remaining" if cooldown else "Ready ✅",
+        name="Cooldown / クールダウン",
+        value=f"{int(cooldown)}s remaining / 残り{int(cooldown)}秒" if cooldown else "Ready / 準備完了",
         inline=True,
     )
     embed.add_field(
-        name="🔄 Active Translations",
+        name="Active / 実行中",
         value=f"{active} / {MAX_CONCURRENT_PER_GUILD}",
         inline=True,
     )
     embed.add_field(
-        name="🤖 Gemini Models",
+        name="Models / モデル数",
         value=str(len(MODEL_PRIORITY)),
         inline=True,
     )
     embed.add_field(
-        name="🌐 Servers",
+        name="Servers / サーバー数",
         value=str(len(bot.guilds)),
         inline=True,
     )
     embed.add_field(
-        name="🗣️ Languages Supported",
+        name="Languages / 対応言語数",
         value=str(len(LANG_LABEL)),
         inline=True,
     )
     embed.add_field(
-        name="📦 Version",
+        name="Version / バージョン",
         value=f"v{BOT_VERSION}",
         inline=True,
     )
@@ -946,15 +1066,15 @@ async def status_command(ctx: commands.Context):
 @bot.command(name="owners")
 async def owners_command(ctx: commands.Context):
     """Show information about the bot's creators."""
-    embed = _base_embed(title="👑 Bot Owners & Credits")
+    embed = _base_embed(title="Bot Owners / 制作者")
     embed.set_thumbnail(url=bot.user.display_avatar.url)
     embed.description = (
-        f"**{BOT_NAME}** `v{BOT_VERSION}` was created by:\n\u200b"
+        f"**{BOT_NAME}** `v{BOT_VERSION}` was created by / 制作者:\n\u200b"
     )
 
     for owner in OWNERS:
         embed.add_field(
-            name=f"👤 {owner['name']}",
+            name=owner["name"],
             value=(
                 f"[GitHub Profile]({owner['github']})\n"
                 f"`{owner['github']}`"
@@ -965,8 +1085,8 @@ async def owners_command(ctx: commands.Context):
     embed.add_field(
         name="\u200b",
         value=(
-            "💡 Found a bug or want to contribute?\n"
-            "Open an issue or PR on GitHub!"
+            "Found a bug or want to contribute?\n"
+            "バグ報告や貢献はGitHubのIssue/PRからどうぞ！"
         ),
         inline=False,
     )
